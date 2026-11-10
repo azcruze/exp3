@@ -1,0 +1,515 @@
+EXPERIMENT 3 – CI/CD Pipeline using Python, GitHub Actions and Docker Hub
+Objective: To implement a CI/CD pipeline that tests, containerizes, and deploys a Python application to Docker Hub using GitHub Actions.
+
+Below is the complete procedure from the beginning, including the websites visited, files created, commands executed, and final verification.
+
+I've used your actual GitHub repository name: python-ci-docker-app.
+
+Complete lab record – Step-by-step
+Step 1: Create the project folder
+Where: Windows PowerShell
+
+Open PowerShell and execute:
+
+
+powershell
+cd $HOME\Desktop
+mkdir python-ci-docker-lab
+cd python-ci-docker-lab
+This creates the project folder and moves into it.
+
+Our project location was:
+
+
+text
+C:\Users\Anna Cruze\python-ci-docker-lab
+Step 2: Create the Python application
+Where: PowerShell → Notepad
+
+Command:
+
+
+powershell
+notepad app.py
+Paste the following code:
+
+File 1: app.py
+
+
+python
+def add(a, b):
+    return a + b
+
+if __name__ == "__main__":
+    print("Python CI/CD Pipeline Demo")
+    print("Addition Result:", add(10, 20))
+Save and close Notepad.
+
+Step 3: Create the test file
+Command:
+
+
+powershell
+notepad test_app.py
+File 2: test_app.py
+
+
+python
+from app import add
+
+def test_add():
+    assert add(10, 20) == 30
+
+def test_add_negative():
+    assert add(-5, 5) == 0
+Save and close.
+
+This file contains two test cases to verify the addition function.
+
+Step 4: Create requirements.txt
+Command:
+
+
+powershell
+notepad requirements.txt
+File 3: requirements.txt
+
+
+text
+pytest
+Save and close.
+
+This file contains the Python testing dependency.
+
+Step 5: Create the Dockerfile
+Command:
+
+
+powershell
+notepad Dockerfile
+File 4: Dockerfile
+
+
+dockerfile
+FROM python:3.12-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+CMD ["python", "app.py"]
+Save and close.
+
+This Dockerfile defines how the Python application is packaged into a Docker image.
+
+Step 6: Create .gitignore
+Command:
+
+
+powershell
+notepad .gitignore
+File 5: .gitignore
+
+
+text
+__pycache__/
+.pytest_cache/
+*.pyc
+.venv/
+venv/
+Save and close.
+
+This prevents unnecessary Python files from being uploaded to GitHub.
+
+Step 7: Run the Python application
+Where: PowerShell
+
+Execute:
+
+
+powershell
+python app.py
+Expected output:
+
+
+text
+Python CI/CD Pipeline Demo
+Addition Result: 30
+This confirms that the Python application is working.
+
+Step 8: Install pytest
+Initially, when we executed the test command, we received this error:
+
+
+text
+No module named pytest
+We fixed this by installing pytest.
+
+Command:
+
+
+powershell
+python -m pip install pytest
+Verify installation:
+
+
+powershell
+python -m pytest --version
+Step 9: Execute the automated tests
+Command:
+
+
+powershell
+python -m pytest -q
+Expected output:
+
+
+text
+..                                                                       [100%]
+2 passed
+This verifies that both test cases passed successfully.
+
+Automated testing completed
+Step 10: Build the Docker image
+Where: PowerShell with Docker Desktop running.
+
+First, verify Docker:
+
+
+powershell
+docker --version
+Build the image:
+
+
+powershell
+docker build -t python-ci-lab:local .
+Check the image:
+
+
+powershell
+docker images
+This creates a Docker image named python-ci-lab with the tag local.
+
+Note: The dot (.) at the end specifies the current project directory as the Docker build context.
+
+Step 11: Run the Docker container locally
+Command:
+
+
+powershell
+docker run --rm python-ci-lab:local
+Expected output:
+
+
+text
+Python CI/CD Pipeline Demo
+Addition Result: 30
+This confirms that the application works inside the Docker container.
+
+Step 12: Initialize Git
+Where: PowerShell
+
+Initialize the local Git repository:
+
+
+powershell
+git init
+Stage the project files:
+
+
+powershell
+git add .
+Commit the files:
+
+
+powershell
+git commit -m "init lab"
+Rename the branch to main:
+
+
+powershell
+git branch -M main
+Step 13: Create a GitHub repository
+Where: GitHub website
+
+Open:
+
+GitHub – Create new repository 
+Follow these steps:
+
+Enter repository name: python-ci-docker-app.
+
+Select Public.
+
+Do not initialize with README.
+
+Click Create repository.
+
+Your GitHub repository:
+
+azcruze/python-ci-docker-app 
+Step 14: Connect the local project to GitHub
+Where: PowerShell
+
+Execute:
+
+
+powershell
+git remote add origin https://github.com/azcruze/python-ci-docker-app.git
+Push the project:
+
+
+powershell
+git push -u origin main
+Expected output includes:
+
+
+text
+[new branch] main -> main
+branch 'main' set up to track 'origin/main'.
+This confirms that the project was uploaded successfully to GitHub.
+
+GitHub upload completed
+Step 15: Create GitHub Actions workflow
+Where: PowerShell
+
+Create the workflow directories:
+
+
+powershell
+mkdir .github
+mkdir .github\workflows
+Create the workflow file:
+
+
+powershell
+notepad .github\workflows\ci-dockerhub.yml
+File 6: ci-dockerhub.yml
+
+Paste:
+
+
+yaml
+
+name: Python CI DockerHub Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run Pytest
+        run: python -m pytest -q
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/python-ci-lab:latest
+Save and close.
+
+This workflow automatically executes when changes are pushed to the main branch.
+
+Step 16: Create a Docker Hub repository
+Where: Docker Hub website
+
+Open:
+
+Docker Hub 
+Follow these steps:
+
+Sign in to Docker Hub.
+
+Click Create repository.
+
+Enter repository name: python-ci-lab.
+
+Select Public.
+
+Click Create.
+
+The image will be published using this naming format:
+
+
+text
+YOUR_DOCKERHUB_USERNAME/python-ci-lab:latest
+Step 17: Generate Docker Hub access token
+Where: Docker Hub website
+
+Open Account Settings.
+
+Go to Personal access tokens.
+
+Click Generate new token.
+
+Enter token description: github-actions.
+
+Select Read & Write permissions.
+
+Generate the token.
+
+Copy and save it securely.
+
+Do not share this token publicly.
+
+Step 18: Add GitHub repository secrets
+Where: GitHub website
+
+Open your repository settings:
+
+GitHub Actions Secrets 
+Click New repository secret.
+
+Create two secrets:
+
+Secret name
+
+Value
+
+DOCKERHUB_USERNAME
+
+Your Docker Hub username
+
+DOCKERHUB_TOKEN
+
+Your Docker Hub access token
+
+Save both secrets.
+
+These secrets allow GitHub Actions to authenticate with Docker Hub securely.
+
+Step 19: Push the workflow to GitHub
+Where: PowerShell
+
+Execute these commands:
+
+
+powershell
+git add .
+
+powershell
+git commit -m "Add GitHub Actions CI Docker pipeline"
+
+powershell
+git push origin main
+This push automatically triggers the GitHub Actions workflow.
+
+Step 20: Verify GitHub Actions
+Where: GitHub website
+
+Open your repository:
+
+GitHub repository 
+Then:
+
+Click the Actions tab.
+
+Open Python CI DockerHub Pipeline.
+
+Select the latest workflow run.
+
+Check whether all steps have green check marks.
+
+The workflow performs:
+
+Checkout repository.
+
+Set up Python 3.12.
+
+Install dependencies.
+
+Run Pytest.
+
+Set up Docker Buildx.
+
+Login to Docker Hub.
+
+Build Docker image.
+
+Push Docker image to Docker Hub.
+
+CI/CD pipeline successful when all steps pass
+Step 21: Pull the Docker image from Docker Hub
+Where: PowerShell
+
+Replace YOUR_DOCKERHUB_USERNAME with your actual Docker Hub username.
+
+
+powershell
+docker pull YOUR_DOCKERHUB_USERNAME/python-ci-lab:latest
+This downloads the image published by GitHub Actions.
+
+Step 22: Run the downloaded Docker image
+Execute:
+
+
+powershell
+docker run --rm YOUR_DOCKERHUB_USERNAME/python-ci-lab:latest
+Expected output:
+
+
+text
+Python CI/CD Pipeline Demo
+Addition Result: 30
+This verifies that the Docker image from Docker Hub can be downloaded and executed successfully.
+
+Complete project structure
+At the end, your project should look like this:
+
+python-ci-docker-lab/
+
+app.py
+
+Python application
+
+test_app.py
+
+Automated test cases
+
+requirements.txt
+
+Python dependencies
+
+Dockerfile
+
+Docker image instructions
+
+.gitignore
+
+Files excluded from Git
+
+.github/
+
+workflows/
+
+ci-dockerhub.yml
