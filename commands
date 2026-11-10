@@ -1,0 +1,54 @@
+# 1. Create project
+cd $HOME\Desktop
+mkdir python-ci-docker-lab
+cd python-ci-docker-lab
+
+# 2. Install dependencies
+python -m pip install pytest
+
+# 3. Run Python application
+python app.py
+
+# 4. Run automated tests
+python -m pytest -q
+
+# 5. Build Docker image
+docker build -t python-ci-lab:local .
+
+# 6. Check Docker images
+docker images
+
+# 7. Run local container
+docker run --rm python-ci-lab:local
+
+# 8. Initialize Git
+git init
+
+# 9. Add and commit files
+git add .
+git commit -m "init lab"
+
+# 10. Set main branch
+git branch -M main
+
+# 11. Connect GitHub repository
+git remote add origin https://github.com/azcruze/python-ci-docker-app.git
+
+# 12. Push to GitHub
+git push -u origin main
+
+# 13. Create workflow file and edit it
+mkdir .github
+mkdir .github\workflows
+notepad .github\workflows\ci-dockerhub.yml
+
+# 14. Push workflow
+git add .
+git commit -m "Add GitHub Actions CI Docker pipeline"
+git push origin main
+
+# 15. Pull Docker Hub image
+docker pull YOUR_DOCKERHUB_USERNAME/python-ci-lab:latest
+
+# 16. Run Docker Hub image
+docker run --rm YOUR_DOCKERHUB_USERNAME/python-ci-lab:latest
