@@ -1,0 +1,215 @@
+Experiment 3 – Final setup
+Use these names throughout the practical
+Item	New name
+Desktop folder	python-ci-docker-lab-final
+GitHub repository	python-ci-docker-lab-final
+Docker image	python-ci-docker-lab
+Docker Hub username	azcruze
+Workflow file	ci-dockerhub.yml
+Git branch	main
+
+step 1 – Create an empty GitHub repository
+Before running the commands:
+1. Open GitHub – Create repository.
+2. Repository name: python-ci-docker-lab-final
+3. Select Public.
+4. Do NOT select README, .gitignore, or License.
+5. Click Create repository.
+This is important: An empty repository prevents the unrelated-history merge conflict we encountered earlier.
+Step 2 – Create the project
+Open CMD:
+cd %USERPROFILE%\Desktop(cd "C:\Users\Anna Cruze\Desktop")
+mkdir python-ci-docker-lab-final
+cd python-ci-docker-lab-final
+
+
+Create app.py:
+notepad app.py
+
+
+Paste:
+def add(a, b):    return a + bif __name__ == "__main__":    print("Python CI Docker Lab")    print("Addition:", add(2, 3))
+
+
+
+Create test_app.py:
+notepad test_app.py
+
+
+Paste:
+from app import adddef test_add():    assert add(2, 3) == 5
+
+
+
+Create Dockerfile:
+notepad Dockerfile
+
+
+Paste:
+FROM python:3.11-slim
+WORKDIR /app
+COPY app.py test_app.py ./
+RUN pip install pytest
+CMD ["python", "app.py"]
+
+
+Save all three files. Make sure the Dockerfile is named exactly Dockerfile, not Dockerfile.txt.
+Step 3 – Install and test Python
+python -m pip install pytest
+python app.py
+python -m pytest -q
+
+
+Expected:
+Python CI Docker Lab
+Addition: 5
+
+
+And:
+1 passed
+
+
+Step 4 – Build and run Docker
+Make sure Docker Desktop is running.
+docker build -t python-ci-lab:local .
+docker images
+docker run --rm python-ci-lab:local
+
+
+Expected container output:
+Python CI Docker Lab
+Addition: 5
+
+
+Step 5 – Upload project to GitHub
+git init
+git add .
+git commit -m "Initial commit"
+git branch -M main
+git remote add origin https://github.com/azcruze/python-ci-docker-lab-final.git
+git push -u origin main
+
+
+Because you created a fresh empty repository, you should not need git pull or --allow-unrelated-histories.
+Step 6 – Create GitHub Actions workflow
+Create the folders:
+mkdir .github
+mkdir .github\workflows
+notepad .github\workflows\ci-dockerhub.yml
+
+
+Paste this complete workflow:
+
+name: Python CI Docker Pipeline
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install pytest
+        run: pip install pytest
+
+      - name: Run tests
+        run: python -m pytest -q
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: azcruze/python-ci-docker-lab:latest
+
+
+
+Save and close Notepad.
+Step 7 – Configure Docker Hub credentials
+1. Open Docker Hub.
+2. Create a public repository named python-ci-docker-lab.
+3. Generate a Docker Hub access token.
+4. Open your GitHub repository → Settings → Secrets and variables → Actions.
+5. Add these repository secrets:
+Secret name	Value
+DOCKERHUB_USERNAME	azcruze
+DOCKERHUB_TOKEN	Your Docker Hub access token
+
+Never put your access token directly in the workflow file.
+Step 8 – Push the workflow to GitHub
+git add .
+git commit -m "Add GitHub Actions CI Docker pipeline"
+git push origin main
+
+
+Open your GitHub repository → Actions.
+
+Wait for the workflow to complete successfully.
+Step 9 – Pull and run Docker Hub image
+Only after the GitHub Actions workflow succeeds:
+docker pull azcruze/python-ci-docker-lab:latest
+docker run --rm azcruze/python-ci-docker-lab:latest
+
+
+Expected:
+Python CI Docker Lab
+Addition: 5
+
+
+
+Important exam reminders
+Situation	What to do
+GitHub repository already has README	Clone it first, or use an empty repository
+Docker build fails	Check Docker Desktop is running
+Docker Hub login fails	Check your GitHub secrets and access token
+Docker pull fails	Check that GitHub Actions successfully pushed the image
+Folder already exists	Use a fresh folder name or reuse it carefully
+
+
+1. Correct the Python code formatting
+Your message has some code lines joined together. Make sure app.py contains exactly:
+def add(a, b):    return a + bif __name__ == "__main__":    print("Python CI Docker Lab")    print("Addition:", add(2, 3))
+
+
+
+And test_app.py contains:
+from app import adddef test_add():    assert add(2, 3) == 5
+
+
+
+2. Use only one Desktop command
+In CMD, use:
+cd %USERPROFILE%\Desktop
+
+
+Do not type the explanation in parentheses. Alternatively, use your full Windows path.
+3. Add a .gitignore file (recommended)
+Before git add ., create:
+notepad .gitignore
+
+
+Paste:
+__pycache__/
+.pytest_cache/
+*.pyc
+
+
+This prevents unnecessary Python cache files from being uploaded.
+
+
